@@ -1,11 +1,32 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Airlines Page</title>
+    <title>Airlines</title>
 </head>
 <body>
 
-<h1 th:text="${message}">Default Message</h1>
+<nav>
+    <a href="/">Home</a> |
+    <a href="/flights">Flights</a> |
+    <a href="/airports">Airports</a> |
+    <a href="/airlines">Airlines</a>
+</nav>
+
+<h2>Airline Directory</h2>
+
+<table border="1">
+    <tr>
+        <th>Name</th>
+        <th>IATA</th>
+        <th>ICAO</th>
+    </tr>
+
+    <tr th:each="a : ${airlines}">
+        <td th:text="${a.name}"></td>
+        <td th:text="${a.iata}"></td>
+        <td th:text="${a.icao}"></td>
+    </tr>
+</table>
 
 </body>
 </html>

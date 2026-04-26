@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>My First Page</title>
+    <title>Airline Information System</title>
 </head>
 <body>
+    <h1>Airline Information System</h1>
+    <p>Search flights, airports, and airlines using AirLabs API</p>
 
-<h1 th:text="${message}">Default Message</h1>
-
+    <nav>
+        <a href="/">Home</a> |
+        <a href="/flights">Flights</a> |
+        <a href="/airports">Airports</a> |
+        <a href="/airlines">Airlines</a>
+    </nav>
 </body>
 </html>

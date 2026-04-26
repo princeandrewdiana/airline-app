@@ -1,11 +1,51 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Flights Page</title>
+    <title>Flights</title>
 </head>
 <body>
 
-<h1 th:text="${message}">Default Message</h1>
+<nav>
+    <a href="/">Home</a> |
+    <a href="/flights">Flights</a> |
+    <a href="/airports">Airports</a> |
+    <a href="/airlines">Airlines</a>
+</nav>
+
+<h2>Search Flights</h2>
+
+<form action="/flights" method="get">
+    <input type="text" name="depIata" placeholder="Enter departure IATA code">
+    <button type="submit">Search</button>
+</form>
+
+<table border="1">
+    <tr>
+        <th>Flight No (IATA)</th>
+        <th>Airline IATA</th>
+        <th>Departure Airport</th>
+        <th>Arrival Airport</th>
+        <th>Status</th>
+        <th>Latitude</th>
+        <th>Longitude</th>
+        <th>Altitude</th>
+        <th>Speed</th>
+        <th>Direction</th>
+    </tr>
+
+    <tr th:each="f : ${flights}">
+        <td th:text="${f.flightIata}"></td>
+        <td th:text="${f.airlineIata}"></td>
+        <td th:text="${f.depIata}"></td>
+        <td th:text="${f.arrIata}"></td>
+        <td th:text="${f.status}"></td>
+        <td th:text="${f.lat}"></td>
+        <td th:text="${f.lng}"></td>
+        <td th:text="${f.alt}"></td>
+        <td th:text="${f.speed}"></td>
+        <td th:text="${f.dir}"></td>
+    </tr>
+</table>
 
 </body>
 </html>

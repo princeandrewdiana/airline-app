@@ -1,41 +1,29 @@
 package com.princediana.airline_app.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Flight {
 
-    private String hex;
-    private String regNumber;
-    private String flag;
-
-    private Double lat;
-    private Double lng;
-    private Integer alt;
-
-    private Integer dir;
-    private Integer speed;
-    private Integer vSpeed;
-
     private String flightNumber;
-    private String flightIcao;
-    private String flightIata;
 
-    private String depIcao;
-    private String depIata;
-
-    private String arrIcao;
-    private String arrIata;
-
-    private String airlineIcao;
     private String airlineIata;
+    private String airlineName;
 
-    private String aircraftIcao;
+    private String depIata;
+    private String depAirportName;
 
-    private Long updated;
+    private String arrIata;
+    private String arrAirportName;
+
     private String status;
 
-    private String type;
+    private String departureTime;
+    private String arrivalTime;
 }

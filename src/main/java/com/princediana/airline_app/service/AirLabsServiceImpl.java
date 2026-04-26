@@ -1,5 +1,6 @@
 package com.princediana.airline_app.service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -11,6 +12,7 @@ import com.princediana.airline_app.model.Airline;
 import com.princediana.airline_app.model.Airport;
 import com.princediana.airline_app.model.Flight;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -25,19 +27,77 @@ public class AirLabsServiceImpl implements AirLabsService {
 
     @Value("${airlabs.api.key}")
     private String apiKey;
+    
+    // =========================
+    // CACHES (for enrichment)
+    // =========================
+    private Map<String, String> airlineCache = new HashMap<>();
+    private Map<String, String> airportCache = new HashMap<>();
+    
+    // =========================
+    // INIT DATA (run once)
+    // =========================
+    @PostConstruct
+    public void init() {
+        loadAirlines();
+        loadAirports();
+    }
+    
+    private void loadAirlines() {
+        try {
+            String url = baseUrl + "/airlines?api_key=" + apiKey;
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+
+            List<Map<String, Object>> data =
+                    (List<Map<String, Object>>) response.getBody().get("response");
+
+            for (Map<String, Object> item : data) {
+                airlineCache.put(
+                        (String) item.get("iata_code"),
+                        (String) item.get("name")
+                );
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void loadAirports() {
+        try {
+            String url = baseUrl + "/airports?api_key=" + apiKey;
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+
+            List<Map<String, Object>> data =
+                    (List<Map<String, Object>>) response.getBody().get("response");
+
+            for (Map<String, Object> item : data) {
+                airportCache.put(
+                        (String) item.get("iata_code"),
+                        (String) item.get("name")
+                );
+            }
+        } catch (Exception ignored) {}
+    }
 
     @Override
     public List<Flight> getFlights(String depIata) {
-        String url = String.format(
-            "%s/flights?dep_iata=%s&api_key=%s",
-            baseUrl, depIata, apiKey
-        );
+    	 String url = String.format(
+                 "%s/flights?dep_iata=%s&api_key=%s",
+                 baseUrl, depIata, apiKey
+         );
 
-        ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+         ResponseEntity<Map> response =
+                 restTemplate.getForEntity(url, Map.class);
 
-        List<Map<String, Object>> data = (List<Map<String, Object>>) response.getBody().get("response");
+         if (response.getBody() == null) return List.of();
 
-        return data.stream().map(this::mapToFlight).toList();
+         Object raw = response.getBody().get("response");
+
+         if (!(raw instanceof List<?> list)) return List.of();
+
+         List<Map<String, Object>> data = (List<Map<String, Object>>) list;
+
+         return data.stream()
+                 .map(this::mapToFlight)
+                 .toList();
     }
 
     @Override
@@ -61,44 +121,87 @@ public class AirLabsServiceImpl implements AirLabsService {
 
         return data.stream().map(this::mapToAirline).toList();
     }
+    
+    private Map<String, Object> getSchedule(String depIata, String arrIata, String flightIata) {
 
-    // 🔽 Mapping methods
+        try {
+            String url = String.format(
+                    "%s/schedules?dep_iata=%s&arr_iata=%s&flight_iata=%s&api_key=%s",
+                    baseUrl, depIata, arrIata, flightIata, apiKey
+            );
 
-    private Flight mapToFlight(Map<String, Object> item) {
-        return Flight.builder()
-                .hex((String) item.get("hex"))
-                .regNumber((String) item.get("reg_number"))
-                .flag((String) item.get("flag"))
+            ResponseEntity<Map> response =
+                    restTemplate.getForEntity(url, Map.class);
 
-                .lat((Double) item.get("lat"))
-                .lng((Double) item.get("lng"))
-                .alt((item.get("alt") != null) ? ((Number) item.get("alt")).intValue() : null)
+            if (response.getBody() == null) return null;
 
-                .dir((item.get("dir") != null) ? ((Number) item.get("dir")).intValue() : null)
-                .speed((item.get("speed") != null) ? ((Number) item.get("speed")).intValue() : null)
-                .vSpeed((item.get("v_speed") != null) ? ((Number) item.get("v_speed")).intValue() : null)
+            List<Map<String, Object>> data =
+                    (List<Map<String, Object>>) response.getBody().get("response");
 
-                .flightNumber((String) item.get("flight_number"))
-                .flightIcao((String) item.get("flight_icao"))
-                .flightIata((String) item.get("flight_iata"))
+            return (data != null && !data.isEmpty()) ? data.get(0) : null;
 
-                .depIcao((String) item.get("dep_icao"))
-                .depIata((String) item.get("dep_iata"))
-
-                .arrIcao((String) item.get("arr_icao"))
-                .arrIata((String) item.get("arr_iata"))
-
-                .airlineIcao((String) item.get("airline_icao"))
-                .airlineIata((String) item.get("airline_iata"))
-
-                .aircraftIcao((String) item.get("aircraft_icao"))
-
-                .updated((item.get("updated") != null) ? ((Number) item.get("updated")).longValue() : null)
-
-                .status((String) item.get("status"))
-                .type((String) item.get("type"))
-                .build();
+        } catch (Exception e) {
+            return null;
+        }
     }
+
+	// =========================
+	// FLIGHT MAPPER (ENRICHED)
+	// =========================
+	private Flight mapToFlight(Map<String, Object> item) {
+	
+		String airlineIata = (String) item.get("airline_iata");
+	    String depIata = (String) item.get("dep_iata");
+	    String arrIata = (String) item.get("arr_iata");
+	    String flightIata = (String) item.get("flight_iata");
+
+	    // 🔥 CALL SCHEDULES API
+	    Map<String, Object> schedule =
+	            getSchedule(depIata, arrIata, flightIata);
+
+	    // =========================
+	    // REAL DATA FROM SCHEDULES API
+	    // =========================
+	    String departureTime = "-";
+	    String arrivalTime = "-";
+
+	    if (schedule != null) {
+
+	        // ✈️ Departure time (BEST AVAILABLE FIELD)
+	        departureTime = schedule.get("dep_estimated") != null
+	                ? schedule.get("dep_estimated").toString()
+	                : schedule.get("dep_time") != null
+	                ? schedule.get("dep_time").toString()
+	                : "-";
+
+	        // ✈️ Arrival time (BEST AVAILABLE FIELD)
+	        arrivalTime = schedule.get("arr_estimated") != null
+	                ? schedule.get("arr_estimated").toString()
+	                : schedule.get("arr_time") != null
+	                ? schedule.get("arr_time").toString()
+	                : "-";
+	    }
+
+	    return Flight.builder()
+	            .flightNumber((String) item.get("flight_number"))
+
+	            .airlineIata(airlineIata)
+	            .airlineName(airlineCache.getOrDefault(airlineIata, airlineIata))
+
+	            .depIata(depIata)
+	            .depAirportName(airportCache.getOrDefault(depIata, depIata))
+
+	            .arrIata(arrIata)
+	            .arrAirportName(airportCache.getOrDefault(arrIata, arrIata))
+
+	            .status((String) item.get("status"))
+
+	            // ✈️ REAL SCHEDULE TIMES
+	            .departureTime(departureTime)
+	            .arrivalTime(arrivalTime)
+
+	            .build();
+	}
     
     private Airport mapToAirport(Map<String, Object> item) {
         return Airport.builder()

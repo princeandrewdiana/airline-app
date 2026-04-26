@@ -1,51 +1,74 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>Flights</title>
-</head>
-<body>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout}">
 
-<nav>
-    <a href="/">Home</a> |
-    <a href="/flights">Flights</a> |
-    <a href="/airports">Airports</a> |
-    <a href="/airlines">Airlines</a>
-</nav>
-
-<h2>Search Flights</h2>
-
-<form action="/flights" method="get">
-    <input type="text" name="depIata" placeholder="Enter departure IATA code">
-    <button type="submit">Search</button>
-</form>
-
-<table border="1">
-    <tr>
-        <th>Flight No (IATA)</th>
-        <th>Airline IATA</th>
-        <th>Departure Airport</th>
-        <th>Arrival Airport</th>
-        <th>Status</th>
-        <th>Latitude</th>
-        <th>Longitude</th>
-        <th>Altitude</th>
-        <th>Speed</th>
-        <th>Direction</th>
-    </tr>
-
-    <tr th:each="f : ${flights}">
-        <td th:text="${f.flightIata}"></td>
-        <td th:text="${f.airlineIata}"></td>
-        <td th:text="${f.depIata}"></td>
-        <td th:text="${f.arrIata}"></td>
-        <td th:text="${f.status}"></td>
-        <td th:text="${f.lat}"></td>
-        <td th:text="${f.lng}"></td>
-        <td th:text="${f.alt}"></td>
-        <td th:text="${f.speed}"></td>
-        <td th:text="${f.dir}"></td>
-    </tr>
-</table>
-
-</body>
+<div th:fragment="content">
+	
+	<h2>✈ Flight Search</h2>
+			
+	<!-- ERROR MESSAGE -->
+	<div th:if="${error != null}" class="error">
+	    <b>Error:</b> <span th:text="${error}"></span>
+	</div>
+	
+	<!-- SEARCH FORM -->
+	<form action="/flights" method="get">
+	    <input type="text"
+	           name="depIata"
+	           placeholder="Enter IATA (e.g. SGN)"
+	           th:value="${depIata}"
+	           required />
+	
+	    <button type="submit">Search</button>
+	</form>
+	
+	<!-- RESULTS -->
+	<div th:if="${flights != null and !#lists.isEmpty(flights)}">
+	
+	    <h3>
+	        Results for:
+	        <span th:text="${depIata}"></span>
+	    </h3>
+	
+	    <table>
+	        <thead>
+	        <tr>
+	            <th>Flight Number</th>
+	            <th>Airline Name</th>
+	            <th>Departure Airport</th>
+	            <th>Arrival Airport</th>
+	            <th>Status</th>
+	            <th>Departure Time</th>
+	            <th>Arrival Time</th>
+	        </tr>
+	        </thead>
+	
+	        <tbody>
+	        <tr th:each="f : ${flights}">
+	            <td th:text="${f.flightNumber}"></td>
+	
+	            <!-- Airline -->
+	            <td th:text="${f.airlineName}"></td>
+	
+	            <!-- Airports -->
+	            <td th:text="${f.depAirportName}"></td>
+	            <td th:text="${f.arrAirportName}"></td>
+	
+	            <!-- Status -->
+	            <td th:text="${f.status}"></td>
+	
+	            <!-- Times -->
+	            <td th:text="${f.departureTime}"></td>
+	            <td th:text="${f.arrivalTime}"></td>
+	        </tr>
+	        </tbody>
+	    </table>
+	
+	</div>
+	
+	<!-- NO RESULTS -->
+	<div th:if="${flights == null or #lists.isEmpty(flights)}" class="no-data">
+	    No flights found. Try entering a valid airport code (e.g. SGN, HAN, DAD).
+	</div>
+</div>
 </html>

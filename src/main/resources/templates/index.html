@@ -1,17 +1,10 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>Airline Information System</title>
-</head>
-<body>
-    <h1>Airline Information System</h1>
-    <p>Search flights, airports, and airlines using AirLabs API</p>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout}">
 
-    <nav>
-        <a href="/">Home</a> |
-        <a href="/flights">Flights</a> |
-        <a href="/airports">Airports</a> |
-        <a href="/airlines">Airlines</a>
-    </nav>
-</body>
+<div th:fragment="content">
+    <h1>✈ Flight Tracker App</h1>
+    <p>Search real-time flights using AirLabs API.</p>
+</div>
+
 </html>

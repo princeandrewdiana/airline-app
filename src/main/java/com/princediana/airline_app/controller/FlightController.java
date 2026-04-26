@@ -22,13 +22,22 @@ public class FlightController {
 	@GetMapping("/flights")
 	public String flights(@RequestParam(required = false) String depIata, Model model) {
 
-	    List<Flight> flights = new ArrayList<>();
+		 List<Flight> flights = new ArrayList<>();
 
-	    if (depIata != null && !depIata.isEmpty()) {
-	        flights = airLabsService.getFlights(depIata);
-	    }
+	        try {
+	            if (depIata != null && !depIata.trim().isEmpty()) {
+	                flights = airLabsService.getFlights(depIata.trim());
+	            }
 
-	    model.addAttribute("flights", flights);
-	    return "flights";
+	            model.addAttribute("flights", flights);
+	            model.addAttribute("depIata", depIata);
+
+	        } catch (Exception e) {
+	            model.addAttribute("error",
+	                    "Unable to fetch flights. Please try again later.");
+	            model.addAttribute("flights", new ArrayList<>());
+	        }
+
+	        return "flights";
 	}
 }

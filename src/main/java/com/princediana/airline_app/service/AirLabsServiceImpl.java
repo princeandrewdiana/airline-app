@@ -29,17 +29,11 @@ public class AirLabsServiceImpl implements AirLabsService {
     @Value("${airlabs.api.key}")
     private String apiKey;
     
-    // =========================
-    // CACHES (for enrichment)
-    // =========================
     private Map<String, String> airlineCache = new HashMap<>();
     private Map<String, String> airportCache = new HashMap<>();
     private Map<String, String> countryCache = new HashMap<>();
     private Map<String, List<Map<String, Object>>> citiesByCountryCacheMap = new HashMap<>();
     
-    // =========================
-    // INIT DATA (run once)
-    // =========================
     @PostConstruct
     public void init() {
         loadAirlines();
@@ -214,9 +208,6 @@ public class AirLabsServiceImpl implements AirLabsService {
         }
     }
 	
-	// =========================
-	// FLIGHT MAPPER (ENRICHED)
-	// =========================
 	private Flight mapToFlight(Map<String, Object> item) {
 	
 		String airlineIata = (String) item.get("airline_iata");
@@ -224,7 +215,7 @@ public class AirLabsServiceImpl implements AirLabsService {
 	    String arrIata = (String) item.get("arr_iata");
 	    String flightIata = (String) item.get("flight_iata");
 
-	    // 🔥 CALL SCHEDULES API
+	    // CALL SCHEDULES API
 	    Map<String, Object> schedule =
 	            getSchedule(depIata, arrIata, flightIata);
 
@@ -236,14 +227,14 @@ public class AirLabsServiceImpl implements AirLabsService {
 
 	    if (schedule != null) {
 
-	        // ✈️ Departure time (BEST AVAILABLE FIELD)
+	        // Departure time (BEST AVAILABLE FIELD)
 	        departureTime = schedule.get("dep_estimated") != null
 	                ? schedule.get("dep_estimated").toString()
 	                : schedule.get("dep_time") != null
 	                ? schedule.get("dep_time").toString()
 	                : "-";
 
-	        // ✈️ Arrival time (BEST AVAILABLE FIELD)
+	        // Arrival time (BEST AVAILABLE FIELD)
 	        arrivalTime = schedule.get("arr_estimated") != null
 	                ? schedule.get("arr_estimated").toString()
 	                : schedule.get("arr_time") != null
@@ -265,7 +256,7 @@ public class AirLabsServiceImpl implements AirLabsService {
 
 	            .status((String) item.get("status"))
 
-	            // ✈️ REAL SCHEDULE TIMES
+	            // REAL SCHEDULE TIMES
 	            .departureTime(departureTime)
 	            .arrivalTime(arrivalTime)
 
@@ -277,12 +268,9 @@ public class AirLabsServiceImpl implements AirLabsService {
 		String countryCode = (String) item.get("country_code");
 		
 	    return Airport.builder()
-	            .name((String) item.getOrDefault("name", "N/A"))
-	            .iata((String) item.getOrDefault("iata_code", "N/A"))
-	            .icao((String) item.getOrDefault("icao_code", "N/A"))
-	            
-	            // REAL CITY NAME
-	            .city((String) item.getOrDefault("city", "N/A"))
+	            .name((String) item.getOrDefault("name", "-"))
+	            .iata((String) item.getOrDefault("iata_code", "-"))
+	            .icao((String) item.getOrDefault("icao_code", "-"))
 	            
 	            // REAL COUNTRY NAME
 	            .countryCode((String) countryCache.getOrDefault(countryCode, countryCode))
@@ -293,19 +281,16 @@ public class AirLabsServiceImpl implements AirLabsService {
 	}
 
 	private Airline mapToAirline(Map<String, Object> item) {
-
-	    Integer isScheduled = item.get("is_scheduled") != null
-	            ? ((Number) item.get("is_scheduled")).intValue()
-	            : 0;
-
-	    String status = (isScheduled == 1) ? "Active" : "Inactive";
+		
+		String name = (String) item.get("name");
+		String iata_code = (String) item.get("iata_code");
+		String icao_code = (String) item.get("icao_code");
+		
 
 	    return Airline.builder()
-	            .name((String) item.getOrDefault("name", "N/A"))
-	            .iata(item.get("iata_code") != null ? item.get("iata_code").toString() : "N/A")
-	            .icao(item.get("icao_code") != null ? item.get("icao_code").toString() : "N/A")
-	            .country((String) item.getOrDefault("country_code", "N/A"))
-	            .status(status)
+	            .name(name != null ? name : "-")
+	            .iata(iata_code != null ? iata_code : "-")
+	            .icao(icao_code != null ? icao_code : "-")
 	            .build();
 	}
 	

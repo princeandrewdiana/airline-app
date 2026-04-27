@@ -10,13 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Airline {
-
     private String name;
     private String iata;
     private String icao;
-
-    private String country;
-
-    // Derived field (not from API directly)
-    private String status; // Active / Inactive
 }

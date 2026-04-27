@@ -219,11 +219,11 @@ public class AirLabsServiceImpl implements AirLabsService {
     private Airport mapToAirport(Map<String, Object> item) {
 
         String countryCode = (String) item.get("country_code");
+        String iataCode = (String) item.get("iata_code");
 
         return Airport.builder()
                 .name((String) item.getOrDefault("name", "-"))
-                .iata((String) item.getOrDefault("iata_code", "-"))
-                .icao((String) item.getOrDefault("icao_code", "-"))
+                .iata(iataCode != null ? iataCode : "-")
                 .countryCode(countryCache.getOrDefault(countryCode, countryCode))
                 .lat(toDouble(item.get("lat")))
                 .lng(toDouble(item.get("lng")))
@@ -231,11 +231,15 @@ public class AirLabsServiceImpl implements AirLabsService {
     }
 
     private Airline mapToAirline(Map<String, Object> item) {
+    	
+    	String name = (String) item.get("name");
+    	String iataCode = (String) item.get("iata_code");
+    	String icaoCode = (String) item.get("icao_code");
 
         return Airline.builder()
-                .name((String) item.getOrDefault("name", "-"))
-                .iata((String) item.getOrDefault("iata_code", "-"))
-                .icao((String) item.getOrDefault("icao_code", "-"))
+                .name(name != null ? name : "-")
+                .iata(iataCode != null ? iataCode : "-")
+                .icao(icaoCode != null ? icaoCode : "-")
                 .build();
     }
 

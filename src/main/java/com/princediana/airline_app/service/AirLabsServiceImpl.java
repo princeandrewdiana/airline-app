@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -12,7 +11,6 @@ import org.springframework.web.client.RestTemplate;
 
 import com.princediana.airline_app.model.Airline;
 import com.princediana.airline_app.model.Airport;
-import com.princediana.airline_app.model.City;
 import com.princediana.airline_app.model.Flight;
 
 import jakarta.annotation.PostConstruct;

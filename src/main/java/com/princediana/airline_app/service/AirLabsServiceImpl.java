@@ -1,5 +1,6 @@
 package com.princediana.airline_app.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,24 +103,51 @@ public class AirLabsServiceImpl implements AirLabsService {
 
     @Override
     public List<Airport> getAirports() {
-        String url = baseUrl + "/airports?api_key=" + apiKey;
 
-        ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+        String url = String.format(
+                "%s/airports?api_key=%s&_fields=name,iata_code,icao_code,city,country_code,lat,lng",
+                baseUrl,
+                apiKey
+        );
 
-        List<Map<String, Object>> data = (List<Map<String, Object>>) response.getBody().get("response");
+        ResponseEntity<Map> response =
+                restTemplate.getForEntity(url, Map.class);
 
-        return data.stream().map(this::mapToAirport).toList();
+        if (response.getBody() == null) return List.of();
+        
+        Object raw = response.getBody().get("response");
+
+        if (!(raw instanceof List<?> list)) return List.of();
+        
+        List<Map<String, Object>> data = (List<Map<String, Object>>) list;
+
+        return data.stream()
+                .map(this::mapToAirport)
+                .toList();
     }
 
     @Override
     public List<Airline> getAirlines() {
-        String url = baseUrl + "/airlines?api_key=" + apiKey;
 
-        ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+        String url = String.format(
+                "%s/airlines?api_key=%s&_fields=name,iata_code,icao_code,country_code,is_scheduled",
+                baseUrl,
+                apiKey
+        );
 
-        List<Map<String, Object>> data = (List<Map<String, Object>>) response.getBody().get("response");
+        ResponseEntity<Map> response =
+                restTemplate.getForEntity(url, Map.class);
 
-        return data.stream().map(this::mapToAirline).toList();
+        if (response.getBody() == null || response.getBody().get("response") == null) {
+            return new ArrayList<>();
+        }
+
+        List<Map<String, Object>> data =
+                (List<Map<String, Object>>) response.getBody().get("response");
+
+        return data.stream()
+                .map(this::mapToAirline)
+                .toList();
     }
     
     private Map<String, Object> getSchedule(String depIata, String arrIata, String flightIata) {
@@ -203,23 +231,51 @@ public class AirLabsServiceImpl implements AirLabsService {
 	            .build();
 	}
     
-    private Airport mapToAirport(Map<String, Object> item) {
-        return Airport.builder()
-                .name((String) item.getOrDefault("name", "N/A"))
-                .iata((String) item.getOrDefault("iata_code", "N/A"))
-                .icao((String) item.getOrDefault("icao_code", "N/A"))
-                .countryCode((String) item.getOrDefault("country_code", "N/A"))
-                .lat(item.get("lat") != null ? ((Number) item.get("lat")).doubleValue() : 0.0)
-                .lng(item.get("lng") != null ? ((Number) item.get("lng")).doubleValue() : 0.0)
-                .build();
-    }
+	private Airport mapToAirport(Map<String, Object> item) {
+	    return Airport.builder()
+	            .name((String) item.getOrDefault("name", "N/A"))
+	            .iata((String) item.getOrDefault("iata_code", "N/A"))
+	            .icao((String) item.getOrDefault("icao_code", "N/A"))
 
-    private Airline mapToAirline(Map<String, Object> item) {
-        return Airline.builder()
-                .name((String) item.getOrDefault("name", "N/A"))
-                .iata(item.get("iata_code") != null ? item.get("iata_code").toString() : "N/A")
-                .icao(item.get("icao_code") != null ? item.get("icao_code").toString() : "N/A")
-                .build();
+	            .city((String) item.getOrDefault("city", "N/A"))
+	            .countryCode((String) item.getOrDefault("country_code", "N/A"))
+
+	            .lat(item.get("lat") != null ? ((Number) item.get("lat")).doubleValue() : 0.0)
+	            .lng(item.get("lng") != null ? ((Number) item.get("lng")).doubleValue() : 0.0)
+	            .build();
+	}
+
+	private Airline mapToAirline(Map<String, Object> item) {
+
+	    Integer isScheduled = item.get("is_scheduled") != null
+	            ? ((Number) item.get("is_scheduled")).intValue()
+	            : 0;
+
+	    String status = (isScheduled == 1) ? "Active" : "Inactive";
+
+	    return Airline.builder()
+	            .name((String) item.getOrDefault("name", "N/A"))
+	            .iata(item.get("iata_code") != null ? item.get("iata_code").toString() : "N/A")
+	            .icao(item.get("icao_code") != null ? item.get("icao_code").toString() : "N/A")
+	            .country((String) item.getOrDefault("country_code", "N/A"))
+	            .status(status)
+	            .build();
+	}
+    
+    public Map<String, Object> getCityByCountry(String countryCode) {
+
+        String url = String.format(
+                "%s/cities?country_code=%s&api_key=%s",
+                baseUrl, countryCode, apiKey
+        );
+
+        ResponseEntity<Map> response =
+                restTemplate.getForEntity(url, Map.class);
+
+        List<Map<String, Object>> data =
+                (List<Map<String, Object>>) response.getBody().get("response");
+
+        return (data != null && !data.isEmpty()) ? data.get(0) : null;
     }
     
 }

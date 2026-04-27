@@ -1,32 +1,63 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>Airlines</title>
-</head>
-<body>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout}">
 
-<nav>
-    <a href="/">Home</a> |
-    <a href="/flights">Flights</a> |
-    <a href="/airports">Airports</a> |
-    <a href="/airlines">Airlines</a>
-</nav>
+	<div th:fragment="content">
+	
+	    <h2>Airline Directory</h2>
+	
+	    <!-- 🔍 FILTER -->
+	    <form method="get" action="/airlines" style="margin-bottom: 20px;">
+	
+	        <input type="text"
+	               name="country"
+	               placeholder="Country Code (e.g. PH, US)"
+	               th:value="${country}" />
+	
+	        <button type="submit">Filter</button>
+	
+	        <a href="/airlines">
+	            <button type="button">Reset</button>
+	        </a>
+	
+	    </form>
+	
+	    <!-- ⚠️ NO DATA -->
+	    <div th:if="${#lists.isEmpty(airlines)}">
+	        <p>No airlines found.</p>
+	    </div>
+	
+	    <!-- ✈️ TABLE -->
+	    <table th:if="${!#lists.isEmpty(airlines)}"
+	           border="1"
+	           cellpadding="8">
+	
+	        <thead>
+	        <tr>
+	            <th>Airline Name</th>
+	            <th>IATA</th>
+	            <th>ICAO</th>
+	            <th>Country</th>
+	            <th>Status</th>
+	        </tr>
+	        </thead>
+	
+	        <tbody>
+	        <tr th:each="a : ${airlines}">
+	            <td th:text="${a.name}"></td>
+	            <td th:text="${a.iata}"></td>
+	            <td th:text="${a.icao}"></td>
+	            <td th:text="${a.country}"></td>
+	
+	            <!-- 🎨 STATUS COLOR -->
+	            <td th:text="${a.status}"
+	                th:style="${a.status == 'Active'} ? 'color:green' : 'color:red'">
+	            </td>
+	        </tr>
+	        </tbody>
+	
+	    </table>
+	
+	</div>
 
-<h2>Airline Directory</h2>
-
-<table border="1">
-    <tr>
-        <th>Name</th>
-        <th>IATA</th>
-        <th>ICAO</th>
-    </tr>
-
-    <tr th:each="a : ${airlines}">
-        <td th:text="${a.name}"></td>
-        <td th:text="${a.iata}"></td>
-        <td th:text="${a.icao}"></td>
-    </tr>
-</table>
-
-</body>
 </html>

@@ -94,5 +94,5 @@ http://localhost:8080
 
 ---
 
-## 🖼️ Docker Hub Image
+## Docker Hub Image URL
 N/A

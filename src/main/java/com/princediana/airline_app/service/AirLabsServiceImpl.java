@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.princediana.airline_app.model.Airline;
 import com.princediana.airline_app.model.Airport;
+import com.princediana.airline_app.model.City;
 import com.princediana.airline_app.model.Flight;
 
 import jakarta.annotation.PostConstruct;
@@ -34,6 +36,8 @@ public class AirLabsServiceImpl implements AirLabsService {
     // =========================
     private Map<String, String> airlineCache = new HashMap<>();
     private Map<String, String> airportCache = new HashMap<>();
+    private Map<String, String> countryCache = new HashMap<>();
+    private Map<String, List<Map<String, Object>>> citiesByCountryCacheMap = new HashMap<>();
     
     // =========================
     // INIT DATA (run once)
@@ -42,6 +46,8 @@ public class AirLabsServiceImpl implements AirLabsService {
     public void init() {
         loadAirlines();
         loadAirports();
+        loadCities();
+        loadCountries();
     }
     
     private void loadAirlines() {
@@ -77,6 +83,44 @@ public class AirLabsServiceImpl implements AirLabsService {
             }
         } catch (Exception ignored) {}
     }
+    
+    private void loadCities() {
+        try {
+            String url = baseUrl + "/cities?api_key=" + apiKey;
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+
+            List<Map<String, Object>> data =
+                    (List<Map<String, Object>>) response.getBody().get("response");
+
+            for (Map<String, Object> item : data) {
+            	
+            	 String countryCode = (String) item.get("country_code");
+            	 citiesByCountryCacheMap
+                        .computeIfAbsent(countryCode, k -> new ArrayList<>())
+                        .add(item);
+                
+            }
+        } catch (Exception ignored) {}
+    }
+    
+    private void loadCountries() {
+    	
+        try {
+        	
+            String url = baseUrl + "/countries?api_key=" + apiKey;
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+
+            List<Map<String, Object>> data =
+                    (List<Map<String, Object>>) response.getBody().get("response");
+
+            for (Map<String, Object> item : data) {
+            	countryCache.put(
+                        (String) item.get("code"),
+                        (String) item.get("name")
+                );
+            }
+        } catch (Exception ignored) {}
+    }
 
     @Override
     public List<Flight> getFlights(String depIata) {
@@ -102,12 +146,11 @@ public class AirLabsServiceImpl implements AirLabsService {
     }
 
     @Override
-    public List<Airport> getAirports() {
+    public List<Airport> getAirports(String country_code, String city_code) {
 
-        String url = String.format(
-                "%s/airports?api_key=%s&_fields=name,iata_code,icao_code,city,country_code,lat,lng",
-                baseUrl,
-                apiKey
+    	String url = String.format(
+                "%s/airports?country_code=%s&city_code=%s&api_key=%s",
+                baseUrl, country_code, city_code, apiKey
         );
 
         ResponseEntity<Map> response =
@@ -172,7 +215,7 @@ public class AirLabsServiceImpl implements AirLabsService {
             return null;
         }
     }
-
+	
 	// =========================
 	// FLIGHT MAPPER (ENRICHED)
 	// =========================
@@ -232,13 +275,19 @@ public class AirLabsServiceImpl implements AirLabsService {
 	}
     
 	private Airport mapToAirport(Map<String, Object> item) {
+		
+		String countryCode = (String) item.get("country_code");
+		
 	    return Airport.builder()
 	            .name((String) item.getOrDefault("name", "N/A"))
 	            .iata((String) item.getOrDefault("iata_code", "N/A"))
 	            .icao((String) item.getOrDefault("icao_code", "N/A"))
-
+	            
+	            // REAL CITY NAME
 	            .city((String) item.getOrDefault("city", "N/A"))
-	            .countryCode((String) item.getOrDefault("country_code", "N/A"))
+	            
+	            // REAL COUNTRY NAME
+	            .countryCode((String) countryCache.getOrDefault(countryCode, countryCode))
 
 	            .lat(item.get("lat") != null ? ((Number) item.get("lat")).doubleValue() : 0.0)
 	            .lng(item.get("lng") != null ? ((Number) item.get("lng")).doubleValue() : 0.0)
@@ -261,21 +310,15 @@ public class AirLabsServiceImpl implements AirLabsService {
 	            .status(status)
 	            .build();
 	}
-    
-    public Map<String, Object> getCityByCountry(String countryCode) {
-
-        String url = String.format(
-                "%s/cities?country_code=%s&api_key=%s",
-                baseUrl, countryCode, apiKey
-        );
-
-        ResponseEntity<Map> response =
-                restTemplate.getForEntity(url, Map.class);
-
-        List<Map<String, Object>> data =
-                (List<Map<String, Object>>) response.getBody().get("response");
-
-        return (data != null && !data.isEmpty()) ? data.get(0) : null;
+	
+	@Override
+    public Map<String, String> getCountriesMap() {
+    	return countryCache;
     }
-    
+
+	@Override
+	public Map<String, List<Map<String, Object>>> getCitiesByCountry() {
+		return citiesByCountryCacheMap;
+	}
+	
 }

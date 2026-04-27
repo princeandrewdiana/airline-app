@@ -4,7 +4,7 @@
 
 <div th:fragment="content">
 	
-	<h2>✈ Flight Search</h2>
+	<h2>Flight Search</h2>
 			
 	<!-- ERROR MESSAGE -->
 	<div th:if="${error != null}" class="error">
@@ -21,6 +21,8 @@
 	
 	    <button type="submit">Search</button>
 	</form>
+	
+	<hr/>
 	
 	<!-- RESULTS -->
 	<div th:if="${flights != null and !#lists.isEmpty(flights)}">

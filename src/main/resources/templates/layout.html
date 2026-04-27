@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      th:fragment="layout">
 
 <head>
     <title>Flight Tracker App</title>
@@ -8,11 +9,11 @@
 
 <body>
 
-<!-- NAVBAR -->
-<div th:replace="~{fragments/navbar :: navbar}"></div>
+    <!-- NAVBAR -->
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<!-- CONTENT -->
-<div th:insert="~{::content}"></div>
+    <!-- CONTENT -->
+    <div th:insert="~{::content}"></div>
 
 </body>
 </html>

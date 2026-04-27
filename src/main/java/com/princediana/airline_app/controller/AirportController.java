@@ -27,9 +27,18 @@ public class AirportController {
 	        @RequestParam(required = false) String city,
 	        Model model) {
 	
-	    // AIRPORTS (FILTERED AT API LEVEL)
-	    List<Airport> airports =
-	            airLabsService.getAirports(country, city);
+		List<Airport> airports;
+
+	    // 👉 INITIAL LOAD (NO FILTER)
+	    if ((country == null || country.isEmpty()) &&
+	        (city == null || city.isEmpty())) {
+
+	        airports = airLabsService.getAirports("", ""); // default fetch
+
+	    } else {
+	        // FILTERED
+	        airports = airLabsService.getAirports(country, city);
+	    }
 	
 	    // COUNTRIES
 	    Map<String, String> countryMap =

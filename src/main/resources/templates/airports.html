@@ -80,7 +80,7 @@
         <tr th:each="a : ${airports}">
             <td th:text="${a.name}"></td>
             <td th:text="${a.iata}"></td>
-            <td th:text="${selectedCityObj?.name} ?: 'N/A'"></td>
+            <td th:text="${selectedCityObj?.name} ?: '-'"></td>
             <td th:text="${a.countryCode}"></td>
             <td th:text="${a.lat}"></td>
             <td th:text="${a.lng}"></td>

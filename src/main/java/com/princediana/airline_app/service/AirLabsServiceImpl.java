@@ -28,133 +28,120 @@ public class AirLabsServiceImpl implements AirLabsService {
 
     @Value("${airlabs.api.key}")
     private String apiKey;
-    
-    private Map<String, String> airlineCache = new HashMap<>();
-    private Map<String, String> airportCache = new HashMap<>();
-    private Map<String, String> countryCache = new HashMap<>();
-    private Map<String, List<Map<String, Object>>> citiesByCountryCacheMap = new HashMap<>();
-    
+
+    // ===== CACHE =====
+    private final Map<String, String> airlineCache = new HashMap<>();
+    private final Map<String, String> airportCache = new HashMap<>();
+    private final Map<String, String> countryCache = new HashMap<>();
+    private final Map<String, List<Map<String, Object>>> citiesByCountryCacheMap = new HashMap<>();
+
+    // =========================
+    // INIT
+    // =========================
     @PostConstruct
     public void init() {
         loadAirlines();
         loadAirports();
-        loadCities();
         loadCountries();
+        loadCities();
     }
-    
-    private void loadAirlines() {
+
+    // =========================
+    // GENERIC API CALL
+    // =========================
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	private List<Map<String, Object>> fetchList(String url) {
         try {
-            String url = baseUrl + "/airlines?api_key=" + apiKey;
-            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            ResponseEntity<Map> response =
+                    restTemplate.getForEntity(url, Map.class);
 
-            List<Map<String, Object>> data =
-                    (List<Map<String, Object>>) response.getBody().get("response");
+            if (response.getBody() == null) return List.of();
 
-            for (Map<String, Object> item : data) {
+            Object raw = response.getBody().get("response");
+
+            if (!(raw instanceof List<?> list)) return List.of();
+
+            return (List<Map<String, Object>>) list;
+
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    private String buildUrl(String endpoint) {
+        return String.format("%s%s?api_key=%s", baseUrl, endpoint, apiKey);
+    }
+
+    // =========================
+    // LOADERS
+    // =========================
+    private void loadAirlines() {
+        fetchList(buildUrl("/airlines")).forEach(item ->
                 airlineCache.put(
                         (String) item.get("iata_code"),
                         (String) item.get("name")
-                );
-            }
-        } catch (Exception ignored) {}
+                )
+        );
     }
 
     private void loadAirports() {
-        try {
-            String url = baseUrl + "/airports?api_key=" + apiKey;
-            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
-
-            List<Map<String, Object>> data =
-                    (List<Map<String, Object>>) response.getBody().get("response");
-
-            for (Map<String, Object> item : data) {
+        fetchList(buildUrl("/airports")).forEach(item ->
                 airportCache.put(
                         (String) item.get("iata_code"),
                         (String) item.get("name")
-                );
-            }
-        } catch (Exception ignored) {}
+                )
+        );
     }
-    
-    private void loadCities() {
-        try {
-            String url = baseUrl + "/cities?api_key=" + apiKey;
-            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
 
-            List<Map<String, Object>> data =
-                    (List<Map<String, Object>>) response.getBody().get("response");
-
-            for (Map<String, Object> item : data) {
-            	
-            	 String countryCode = (String) item.get("country_code");
-            	 citiesByCountryCacheMap
-                        .computeIfAbsent(countryCode, k -> new ArrayList<>())
-                        .add(item);
-                
-            }
-        } catch (Exception ignored) {}
-    }
-    
     private void loadCountries() {
-    	
-        try {
-        	
-            String url = baseUrl + "/countries?api_key=" + apiKey;
-            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
-
-            List<Map<String, Object>> data =
-                    (List<Map<String, Object>>) response.getBody().get("response");
-
-            for (Map<String, Object> item : data) {
-            	countryCache.put(
+        fetchList(buildUrl("/countries")).forEach(item ->
+                countryCache.put(
                         (String) item.get("code"),
                         (String) item.get("name")
-                );
-            }
-        } catch (Exception ignored) {}
+                )
+        );
     }
 
+    private void loadCities() {
+        fetchList(buildUrl("/cities")).forEach(item -> {
+            String countryCode = (String) item.get("country_code");
+
+            citiesByCountryCacheMap
+                    .computeIfAbsent(countryCode, k -> new ArrayList<>())
+                    .add(item);
+        });
+    }
+
+    // =========================
+    // SERVICES
+    // =========================
     @Override
     public List<Flight> getFlights(String depIata) {
-    	 String url = String.format(
-                 "%s/flights?dep_iata=%s&api_key=%s",
-                 baseUrl, depIata, apiKey
-         );
 
-         ResponseEntity<Map> response =
-                 restTemplate.getForEntity(url, Map.class);
+        String url = String.format(
+                "%s/flights?dep_iata=%s&api_key=%s",
+                baseUrl, depIata, apiKey
+        );
 
-         if (response.getBody() == null) return List.of();
+        List<Map<String, Object>> data = fetchList(url);
 
-         Object raw = response.getBody().get("response");
-
-         if (!(raw instanceof List<?> list)) return List.of();
-
-         List<Map<String, Object>> data = (List<Map<String, Object>>) list;
-
-         return data.stream()
-                 .map(this::mapToFlight)
-                 .toList();
+        return data.stream()
+                .map(this::mapToFlight)
+                .toList();
     }
 
     @Override
-    public List<Airport> getAirports(String country_code, String city_code) {
+    public List<Airport> getAirports(String country, String city) {
 
-    	String url = String.format(
+        String url = String.format(
                 "%s/airports?country_code=%s&city_code=%s&api_key=%s",
-                baseUrl, country_code, city_code, apiKey
+                baseUrl,
+                country != null ? country : "",
+                city != null ? city : "",
+                apiKey
         );
 
-        ResponseEntity<Map> response =
-                restTemplate.getForEntity(url, Map.class);
-
-        if (response.getBody() == null) return List.of();
-        
-        Object raw = response.getBody().get("response");
-
-        if (!(raw instanceof List<?> list)) return List.of();
-        
-        List<Map<String, Object>> data = (List<Map<String, Object>>) list;
+        List<Map<String, Object>> data = fetchList(url);
 
         return data.stream()
                 .map(this::mapToAirport)
@@ -166,142 +153,106 @@ public class AirLabsServiceImpl implements AirLabsService {
 
         String url = String.format(
                 "%s/airlines?api_key=%s&_fields=name,iata_code,icao_code,country_code,is_scheduled",
-                baseUrl,
-                apiKey
+                baseUrl, apiKey
         );
 
-        ResponseEntity<Map> response =
-                restTemplate.getForEntity(url, Map.class);
-
-        if (response.getBody() == null || response.getBody().get("response") == null) {
-            return new ArrayList<>();
-        }
-
-        List<Map<String, Object>> data =
-                (List<Map<String, Object>>) response.getBody().get("response");
+        List<Map<String, Object>> data = fetchList(url);
 
         return data.stream()
                 .map(this::mapToAirline)
                 .toList();
     }
-    
-    private Map<String, Object> getSchedule(String depIata, String arrIata, String flightIata) {
 
-        try {
-            String url = String.format(
-                    "%s/schedules?dep_iata=%s&arr_iata=%s&flight_iata=%s&api_key=%s",
-                    baseUrl, depIata, arrIata, flightIata, apiKey
-            );
+    // =========================
+    // SCHEDULE API
+    // =========================
+    private Map<String, Object> getSchedule(String dep, String arr, String flight) {
 
-            ResponseEntity<Map> response =
-                    restTemplate.getForEntity(url, Map.class);
+        String url = String.format(
+                "%s/schedules?dep_iata=%s&arr_iata=%s&flight_iata=%s&api_key=%s",
+                baseUrl, dep, arr, flight, apiKey
+        );
 
-            if (response.getBody() == null) return null;
+        List<Map<String, Object>> data = fetchList(url);
 
-            List<Map<String, Object>> data =
-                    (List<Map<String, Object>>) response.getBody().get("response");
+        return data.isEmpty() ? null : data.get(0);
+    }
 
-            return (data != null && !data.isEmpty()) ? data.get(0) : null;
+    // =========================
+    // MAPPERS
+    // =========================
+    private Flight mapToFlight(Map<String, Object> item) {
 
-        } catch (Exception e) {
-            return null;
+        String airlineIata = (String) item.get("airline_iata");
+        String depIata = (String) item.get("dep_iata");
+        String arrIata = (String) item.get("arr_iata");
+        String flightIata = (String) item.get("flight_iata");
+
+        Map<String, Object> schedule =
+                getSchedule(depIata, arrIata, flightIata);
+
+        String departureTime = "-";
+        String arrivalTime = "-";
+
+        if (schedule != null) {
+            departureTime = schedule.getOrDefault("dep_estimated",
+                    schedule.getOrDefault("dep_time", "-")).toString();
+
+            arrivalTime = schedule.getOrDefault("arr_estimated",
+                    schedule.getOrDefault("arr_time", "-")).toString();
         }
+
+        return Flight.builder()
+                .flightNumber((String) item.get("flight_number"))
+                .airlineIata(airlineIata)
+                .airlineName(airlineCache.getOrDefault(airlineIata, airlineIata))
+                .depIata(depIata)
+                .depAirportName(airportCache.getOrDefault(depIata, depIata))
+                .arrIata(arrIata)
+                .arrAirportName(airportCache.getOrDefault(arrIata, arrIata))
+                .status((String) item.get("status"))
+                .departureTime(departureTime)
+                .arrivalTime(arrivalTime)
+                .build();
     }
-	
-	private Flight mapToFlight(Map<String, Object> item) {
-	
-		String airlineIata = (String) item.get("airline_iata");
-	    String depIata = (String) item.get("dep_iata");
-	    String arrIata = (String) item.get("arr_iata");
-	    String flightIata = (String) item.get("flight_iata");
 
-	    // CALL SCHEDULES API
-	    Map<String, Object> schedule =
-	            getSchedule(depIata, arrIata, flightIata);
+    private Airport mapToAirport(Map<String, Object> item) {
 
-	    // =========================
-	    // REAL DATA FROM SCHEDULES API
-	    // =========================
-	    String departureTime = "-";
-	    String arrivalTime = "-";
+        String countryCode = (String) item.get("country_code");
 
-	    if (schedule != null) {
+        return Airport.builder()
+                .name((String) item.getOrDefault("name", "-"))
+                .iata((String) item.getOrDefault("iata_code", "-"))
+                .icao((String) item.getOrDefault("icao_code", "-"))
+                .countryCode(countryCache.getOrDefault(countryCode, countryCode))
+                .lat(toDouble(item.get("lat")))
+                .lng(toDouble(item.get("lng")))
+                .build();
+    }
 
-	        // Departure time (BEST AVAILABLE FIELD)
-	        departureTime = schedule.get("dep_estimated") != null
-	                ? schedule.get("dep_estimated").toString()
-	                : schedule.get("dep_time") != null
-	                ? schedule.get("dep_time").toString()
-	                : "-";
+    private Airline mapToAirline(Map<String, Object> item) {
 
-	        // Arrival time (BEST AVAILABLE FIELD)
-	        arrivalTime = schedule.get("arr_estimated") != null
-	                ? schedule.get("arr_estimated").toString()
-	                : schedule.get("arr_time") != null
-	                ? schedule.get("arr_time").toString()
-	                : "-";
-	    }
+        return Airline.builder()
+                .name((String) item.getOrDefault("name", "-"))
+                .iata((String) item.getOrDefault("iata_code", "-"))
+                .icao((String) item.getOrDefault("icao_code", "-"))
+                .build();
+    }
 
-	    return Flight.builder()
-	            .flightNumber((String) item.get("flight_number"))
+    private Double toDouble(Object value) {
+        return value != null ? ((Number) value).doubleValue() : 0.0;
+    }
 
-	            .airlineIata(airlineIata)
-	            .airlineName(airlineCache.getOrDefault(airlineIata, airlineIata))
-
-	            .depIata(depIata)
-	            .depAirportName(airportCache.getOrDefault(depIata, depIata))
-
-	            .arrIata(arrIata)
-	            .arrAirportName(airportCache.getOrDefault(arrIata, arrIata))
-
-	            .status((String) item.get("status"))
-
-	            // REAL SCHEDULE TIMES
-	            .departureTime(departureTime)
-	            .arrivalTime(arrivalTime)
-
-	            .build();
-	}
-    
-	private Airport mapToAirport(Map<String, Object> item) {
-		
-		String countryCode = (String) item.get("country_code");
-		
-	    return Airport.builder()
-	            .name((String) item.getOrDefault("name", "-"))
-	            .iata((String) item.getOrDefault("iata_code", "-"))
-	            .icao((String) item.getOrDefault("icao_code", "-"))
-	            
-	            // REAL COUNTRY NAME
-	            .countryCode((String) countryCache.getOrDefault(countryCode, countryCode))
-
-	            .lat(item.get("lat") != null ? ((Number) item.get("lat")).doubleValue() : 0.0)
-	            .lng(item.get("lng") != null ? ((Number) item.get("lng")).doubleValue() : 0.0)
-	            .build();
-	}
-
-	private Airline mapToAirline(Map<String, Object> item) {
-		
-		String name = (String) item.get("name");
-		String iata_code = (String) item.get("iata_code");
-		String icao_code = (String) item.get("icao_code");
-		
-
-	    return Airline.builder()
-	            .name(name != null ? name : "-")
-	            .iata(iata_code != null ? iata_code : "-")
-	            .icao(icao_code != null ? icao_code : "-")
-	            .build();
-	}
-	
-	@Override
+    // =========================
+    // GETTERS
+    // =========================
+    @Override
     public Map<String, String> getCountriesMap() {
-    	return countryCache;
+        return countryCache;
     }
 
-	@Override
-	public Map<String, List<Map<String, Object>>> getCitiesByCountry() {
-		return citiesByCountryCacheMap;
-	}
-	
+    @Override
+    public Map<String, List<Map<String, Object>>> getCitiesByCountry() {
+        return citiesByCountryCacheMap;
+    }
 }

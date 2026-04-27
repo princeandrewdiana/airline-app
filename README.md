@@ -77,18 +77,22 @@ http://localhost:8080
 ## 🖼️ Screenshots
 
 ### Home Page
-TODO
+![Home](screenshots/home.png)
 
 ### Flights Page
-TODO
+![Flights](screenshots/flights_init.png)
+
+![Flights](screenshots/flights_search.png)
 
 ### Airports Page
-TODO
+![Airports](screenshots/airports_init.png)
+
+![Airports](screenshots/airports_filter.png)
 
 ### Airlines Page
-TODO
+![Airlines](screenshots/airlines.png)
 
 ---
 
 ## 🖼️ Docker Hub Image
-TODO
+N/A

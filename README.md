@@ -7,6 +7,38 @@ Built using Spring Boot, Thymeleaf, and Docker with external API integrations fo
 
 ---
 
+## 🚀 Features
+
+### ✈ Flights
+- Search real-time flights by departure airport (IATA code)
+- Displays:
+  - Flight Number
+  - Airline Name
+  - Departure & Arrival Airports
+  - Flight Status
+  - Departure & Arrival Time (enhanced via Schedules API)
+
+### 🏢 Airports
+- Browse airport directory with:
+  - Airport Name
+  - IATA Code
+  - City *(limited availability from API)*
+  - Country
+  - Latitude & Longitude
+- Filtering:
+  - By Country
+  - By City (dynamic dependent dropdown)
+
+### 🛫 Airlines
+- View airline directory including:
+  - Airline Name
+  - IATA Code
+  - ICAO Code
+  - Country *(limited availability from API)*
+  - Status *(limited availability from API)*
+    
+---
+
 ## ⚙️ How to Run Locally
 
 ### 1. Clone Repository
@@ -97,4 +129,4 @@ http://localhost:8080
 ## 🐳 Docker Hub Image URL
 https://hub.docker.com/r/princedianadev/airline-app
 
-![Docker_Hub_Image_URL](screenshots/docker_hub_image_url.png)
+![Docker_Hub_Image_URL](screenshots/docker_hub_image_url_v2.png)

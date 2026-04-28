@@ -44,7 +44,7 @@ Built using Spring Boot, Thymeleaf, and Docker with external API integrations fo
 ### 1. Clone Repository
 
 ```
-git clone https://github.com/your-username/airline-app.git
+git clone https://github.com/princeandrewdiana/airline-app.git
 cd airline-app
 ```
 ### 2. Configure API Key

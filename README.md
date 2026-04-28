@@ -97,3 +97,4 @@ http://localhost:8080
 ## 🐳 Docker Hub Image URL
 https://hub.docker.com/r/princedianadev/airline-app
 
+![Docker_Hub_Image_URL](screenshots/docker_hub_image_url.png)
